@@ -7,7 +7,7 @@ install path in the common config.
 
 """
 
-import sqlite3, fnmatch, os, imp
+import MySQLdb, fnmatch, os, imp
 import messages
 import helpers
 

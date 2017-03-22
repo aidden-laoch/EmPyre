@@ -120,7 +120,8 @@ class Agents:
             userAgent = parts[1]
             additionalHeaders = "|".join(parts[2:])
 
-        cur.execute("INSERT INTO agents (name,session_id,delay,jitter,external_ip,session_key,nonce,checkin_time,lastseen_time,uris,user_agent,headers,kill_date,working_hours,lost_limit,taskings,results) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')" % (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, requestUris, userAgent, additionalHeaders, killDate, workingHours, lostLimit, "", ""))
+        cur.execute("INSERT INTO agents (name,session_id,delay,jitter,external_ip,session_key,nonce,checkin_time,lastseen_time,uris,user_agent,headers,kill_date,working_hours,lost_limit,taskings,results) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                    (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, requestUris, userAgent, additionalHeaders, killDate, workingHours, lostLimit, "", ""))
         cur.close()
 
         # initialize the tasking/result buffers along with the client session key
@@ -129,7 +130,7 @@ class Agents:
 
         # report the initial checkin in the reporting database
         cur = self.conn.cursor()
-        cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES ('%s','%s','%s','%s')" % (sessionID, "checkin", checkinTime, helpers.get_datetime()))
+        cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (sessionID, "checkin", checkinTime, helpers.get_datetime()))
         cur.close()
 
     def is_agent_present(self, sessionID):
@@ -331,7 +332,7 @@ class Agents:
         """
 
         cur = self.conn.cursor()
-        cur.execute("SELECT * FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT * FROM agents WHERE session_id=?", [sessionID])
         agent = cur.fetchone()
         cur.close()
         return agent
@@ -346,7 +347,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT internal_ip FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT internal_ip FROM agents WHERE session_id=?", [sessionID])
         agent = cur.fetchone()
         cur.close()
         return agent
@@ -361,7 +362,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT high_integrity FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT high_integrity FROM agents WHERE session_id=?", [sessionID])
         elevated = cur.fetchone()
         cur.close()
 
@@ -380,7 +381,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT py_version FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT py_version FROM agents WHERE session_id=?", [sessionID])
         py_version = cur.fetchone()
         cur.close()
 
@@ -400,7 +401,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT session_key FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT session_key FROM agents WHERE session_id=?", [sessionID])
         sessionKey = cur.fetchone()
         cur.close()
 
@@ -419,7 +420,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT nonce FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT nonce FROM agents WHERE session_id=?", [sessionID])
         nonce = cur.fetchone()
         cur.close()
 
@@ -444,10 +445,10 @@ class Agents:
             print helpers.color("[!] Agent %s not active." %(agentName))
         else:
             cur = self.conn.cursor()
-            cur.execute("SELECT results FROM agents WHERE session_id='%s'" % sessionID)
+            cur.execute("SELECT results FROM agents WHERE session_id=?", [sessionID])
             results = cur.fetchone()
             
-            cur.execute("UPDATE agents SET results = '%s' WHERE session_id='%s'" % ('',sessionID))
+            cur.execute("UPDATE agents SET results = ? WHERE session_id=?", ['',sessionID])
 
             if results and results[0] and results[0] != '':
                 out = json.loads(results[0])
@@ -463,7 +464,7 @@ class Agents:
         """
 
         cur = self.conn.cursor()
-        cur.execute("SELECT session_id FROM agents WHERE name='%s'" % name)
+        cur.execute("SELECT session_id FROM agents WHERE name=?", [name])
         results = cur.fetchone()
         if results:
             return results[0]
@@ -476,7 +477,7 @@ class Agents:
         """
 
         cur = self.conn.cursor()
-        cur.execute("SELECT name FROM agents WHERE session_id='%s' or name = '%s'" % (sessionID, sessionID))
+        cur.execute("SELECT name FROM agents WHERE session_id=? or name = ?", [sessionID, sessionID])
         results = cur.fetchone()
         if results:
             return results[0]
@@ -489,7 +490,7 @@ class Agents:
         """
 
         cur = self.conn.cursor()
-        cur.execute("SELECT hostname FROM agents WHERE session_id='%s' or name = '%s'" % (sessionID, sessionID))
+        cur.execute("SELECT hostname FROM agents WHERE session_id=? or name = ?", [sessionID, sessionID])
         results = cur.fetchone()
         if results:
             return results[0]
@@ -506,7 +507,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT uris, old_uris FROM agents WHERE session_id='%s'" %sessionID)
+        cur.execute("SELECT uris, old_uris FROM agents WHERE session_id=?", [sessionID])
         uris = cur.fetchone()
         cur.close()
 
@@ -558,7 +559,7 @@ class Agents:
             cur = self.conn.cursor()
 
             # get existing agent results
-            cur.execute("SELECT results FROM agents WHERE session_id LIKE '%s'" % sessionID)
+            cur.execute("SELECT results FROM agents WHERE session_id LIKE ?", [sessionID])
             agentResults = cur.fetchone()
 
             if(agentResults and agentResults[0]):
@@ -568,7 +569,7 @@ class Agents:
 
             agentResults.append(results)
 
-            cur.execute("UPDATE agents SET results = '%s' WHERE session_id='%s'" % (json.dumps(agentResults),sessionID))
+            cur.execute("UPDATE agents SET results = ? WHERE session_id=?", [json.dumps(agentResults),sessionID])
             cur.close()
         else:
             dispatcher.send("[!] Non-existent agent %s returned results" %(sessionID), sender="Agents")
@@ -583,7 +584,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("UPDATE agents SET listener = '%s', internal_ip = '%s', username = '%s', high_integrity = '%s', hostname = '%s', os_details = '%s', process_id = '%s', py_version = '%s' WHERE session_id='%s'" % (listener, internal_ip, username, high_integrity, hostname, os_details, process_id, py_version, sessionID))
+        cur.execute("UPDATE agents SET listener = ?, internal_ip = ?, username = ?, high_integrity = ?, hostname = ?, os_details = ?, process_id = ?, py_version = ? WHERE session_id=?", [listener, internal_ip, username, high_integrity, hostname, os_details, process_id, py_version, sessionID])
         cur.close()
 
     def update_agent_lastseen(self, sessionID):
@@ -597,7 +598,7 @@ class Agents:
 
         currentTime = helpers.get_datetime()
         cur = self.conn.cursor()
-        cur.execute("UPDATE agents SET lastseen_time='%s' WHERE session_id='%s'" % (currentTime, sessionID))
+        cur.execute("UPDATE agents SET lastseen_time=? WHERE session_id=?", [currentTime, sessionID])
         cur.close()
 
     def update_agent_profile(self, sessionID, profile):
@@ -615,7 +616,7 @@ class Agents:
         # get the existing URIs from the agent and save them to
         # the old_uris field, so we can ensure that it can check in
         # to get the new URI tasking... bootstrapping problem :)
-        cur.execute("SELECT uris FROM agents WHERE session_id='%s'" % sessionID)
+        cur.execute("SELECT uris FROM agents WHERE session_id=?", [sessionID])
         oldURIs = cur.fetchone()[0]
 
         if sessionID not in self.agents:
@@ -627,10 +628,10 @@ class Agents:
 
         # if no additional headers
         if len(parts) == 2:
-            cur.execute("UPDATE agents SET uris='%s', user_agent='%s', old_uris='%s' WHERE session_id='%s'" % (parts[0], parts[1], oldURIs, sessionID))
+            cur.execute("UPDATE agents SET uris=?, user_agent=?, old_uris=? WHERE session_id=?", [parts[0], parts[1], oldURIs, sessionID])
         else:
             # if additional headers
-            cur.execute("UPDATE agents SET uris='%s', user_agent='%s', headers='%s', old_uris='%s' WHERE session_id='%s'" % (parts[0], parts[1], parts[2], oldURIs, sessionID))
+            cur.execute("UPDATE agents SET uris=?, user_agent=?, headers=?, old_uris=? WHERE session_id=?", [parts[0], parts[1], parts[2], oldURIs, sessionID])
 
         cur.close()
 
@@ -661,12 +662,12 @@ class Agents:
 
             # rename the agent in the database
             cur = self.conn.cursor()
-            cur.execute("UPDATE agents SET name='%s' WHERE name='%s'", [newname, oldname])
+            cur.execute("UPDATE agents SET name=? WHERE name=?", [newname, oldname])
             cur.close()
 
             # report the agent rename in the reporting database
             cur = self.conn.cursor()
-            cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES ('%s','%s','%s','%s')" % (oldname, "rename", newname, helpers.get_datetime()))
+            cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (oldname, "rename", newname, helpers.get_datetime()))
             cur.close()
 
             return True
@@ -681,7 +682,7 @@ class Agents:
         if nameid: sessionID = nameid
 
         cur = self.conn.cursor()
-        cur.execute("UPDATE agents SET "+str(field)+"='%s' WHERE session_id='%s'" % (value, sessionID))
+        cur.execute("UPDATE agents SET "+str(field)+"=? WHERE session_id=?", [value, sessionID])
         cur.close()
 
     def set_autoruns(self, taskCommand, moduleData):
@@ -691,8 +692,8 @@ class Agents:
 
         try:
             cur = self.conn.cursor()
-            cur.execute("UPDATE config SET autorun_command='%s'" % taskCommand)
-            cur.execute("UPDATE config SET autorun_data='%s'" % moduleData)
+            cur.execute("UPDATE config SET autorun_command=?", [taskCommand])
+            cur.execute("UPDATE config SET autorun_data=?", [moduleData])
             cur.close()
         except:
             print helpers.color("[!] Error: script autoruns not a database field, run ./setup_database.py to reset DB schema.")
@@ -736,7 +737,7 @@ class Agents:
 
                 # get existing agent taskings
                 cur = self.conn.cursor()
-                cur.execute("SELECT taskings FROM agents WHERE session_id='%s'" % sessionID)
+                cur.execute("SELECT taskings FROM agents WHERE session_id=?", [sessionID])
                 agentTasks = cur.fetchone()
 
                 if(agentTasks and agentTasks[0]):
@@ -746,7 +747,7 @@ class Agents:
 
                 # append our new json-ified task and update the backend
                 agentTasks.append([taskName, task])
-                cur.execute("UPDATE agents SET taskings='%s' WHERE session_id='%s'" % (json.dumps(agentTasks),sessionID))
+                cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks),sessionID])
 
                 # write out the last tasked script to "LastTask.py" if in debug mode
                 if self.args and self.args.debug:
@@ -755,7 +756,7 @@ class Agents:
                     f.close()
 
                 # report the agent tasking in the reporting database
-                cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES ('%s','%s','%s','%s')" % (sessionID, "task", taskName + " - " + task[0:50], helpers.get_datetime()))
+                cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (sessionID, "task", taskName + " - " + task[0:50], helpers.get_datetime()))
                 cur.close()
 
     def get_agent_tasks(self, sessionID):
@@ -775,14 +776,14 @@ class Agents:
         else:
 
             cur = self.conn.cursor()
-            cur.execute("SELECT taskings FROM agents WHERE session_id='%s'" % sessionID)
+            cur.execute("SELECT taskings FROM agents WHERE session_id=?", [sessionID])
             tasks = cur.fetchone()
 
             if(tasks and tasks[0]):
                 tasks = json.loads(tasks[0])
 
                 # clear the taskings out
-                cur.execute("UPDATE agents SET taskings='%s' WHERE session_id='%s'" % ('', sessionID))
+                cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", ['', sessionID])
             else:
                 tasks = []
 
@@ -801,7 +802,7 @@ class Agents:
             sessionID = '%'
 
         cur = self.conn.cursor()
-        cur.execute("UPDATE agents SET taskings='%s' WHERE session_id LIKE '%s'" % ('', sessionID))
+        cur.execute("UPDATE agents SET taskings=? WHERE session_id LIKE ?", ['', sessionID])
         cur.close()
 
     def handle_agent_response(self, sessionID, responseName, data):
@@ -817,7 +818,7 @@ class Agents:
 
         # report the agent result in the reporting database
         cur = self.conn.cursor()
-        cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES ('%s','%s','%s','%s')" % (agentSessionID, "result", responseName, helpers.get_datetime()))
+        cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentSessionID, "result", responseName, helpers.get_datetime()))
         cur.close()
 
         # TODO: for heavy traffic packets, check these first (i.e. SOCKS?)

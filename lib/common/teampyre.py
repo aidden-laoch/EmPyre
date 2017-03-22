@@ -57,6 +57,10 @@ class MainMenu(cmd.Cmd):
         self.agents = agents.Agents(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.stagers = stagers.Stagers(self, args=args)
+        #print 'THIS IS STAGERS FUCKERS'
+        #print self.stagers.stagers["launcher"]
+        #print 'THAT WAS STAGERS FUCKERS'
+        #print type(self.stagers)
         self.modules = modules.Modules(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)
 
@@ -1878,7 +1882,6 @@ class ListenerMenu(cmd.Cmd):
 
     def do_launcher(self, line):
         "Generate an initial launcher for a listener."
-
         nameid = self.mainMenu.listeners.get_listener_id(line.strip())
         if nameid:
             listenerID = nameid
@@ -1887,7 +1890,9 @@ class ListenerMenu(cmd.Cmd):
 
         if listenerID != "" and self.mainMenu.listeners.is_listener_valid(listenerID):
             # set the listener value for the launcher
+            print self.mainMenu.stagers.stagers
             stager = self.mainMenu.stagers.stagers["launcher"]
+            print 'launcher stager'
             stager.options['Listener']['Value'] = listenerID
             stager.options['Base64']['Value'] = "True"
 

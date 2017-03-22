@@ -1,13 +1,13 @@
 #!/usr/bin/python
 
-import argparse, sys, argparse, logging, json, string, os, re, time, signal, copy, base64, MySQLdb
+import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal, copy, base64
 from flask import Flask, request, jsonify, make_response, abort
 from time import localtime, strftime
 from OpenSSL import SSL
 from Crypto.Random import random
 
-# teampyre imports
-from lib.common import teampyre
+# Empyre imports
+from lib.common import empyre
 from lib.common import helpers
 
 global serverExitCommand
@@ -21,16 +21,14 @@ serverExitCommand = 'restart'
 
 def database_connect():
     """
-    Connect with the backend ./teampyre.db sqlite database and return the
+    Connect with the backend ./empyre.db sqlite database and return the
     connection object.
     """
     try:
         # set the database connectiont to autocommit w/ isolation level
-        #conn = sqlite3.connect('./data/teampyre.db', check_same_thread=False)
-        conn = MySQLdb.connect(host='localhost',user='empyre-balls',passwd='4zballs',db='empyre')
-        #conn = db.cursor()
-        #conn.text_factory = str
-        #conn.isolation_level = None
+        conn = sqlite3.connect('./data/empyre.db', check_same_thread=False)
+        conn.text_factory = str
+        conn.isolation_level = None
         return conn
 
     except Exception as e:
@@ -70,7 +68,7 @@ def refresh_api_token(conn):
 
 def get_permanent_token(conn):
     """
-    Returns the permanent API token stored in teampyre.db.
+    Returns the permanent API token stored in empyre.db.
 
     If one doesn't exist, it will generate one and store it before returning.
     """
@@ -85,14 +83,14 @@ def get_permanent_token(conn):
 
 ####################################################################
 #
-# The teampyre RESTful API.
+# The EmPyre RESTful API.
 # 
 # Adapted from http://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 #   example code at https://gist.github.com/miguelgrinberg/5614326
 #
 #    Verb     URI                                            Action
 #    ----     ---                                            ------
-#    GET      http://localhost:1337/api/version              return the current teampyre version
+#    GET      http://localhost:1337/api/version              return the current EmPyre version
 #    
 #    GET      http://localhost:1337/api/config               return the current default config
 #
@@ -141,14 +139,14 @@ def get_permanent_token(conn):
 #    
 ####################################################################
 
-def start_restful_api(startteampyre=False, suppress=False, username=None, password=None, port=1337):
+def start_restful_api(startEmpyre=False, suppress=False, username=None, password=None, port=1337):
     """
     Kick off the RESTful API with the given parameters.
 
-    startteampyre -   start a complete teampyre instance in the backend as well
+    startEmpyre -   start a complete EmPyre instance in the backend as well
     suppress    -   suppress most console output
-    username    -   optional username to use for the API, otherwise pulls from the teampyre.db config
-    password    -   optional password to use for the API, otherwise pulls from the teampyre.db config
+    username    -   optional username to use for the API, otherwise pulls from the empyre.db config
+    password    -   optional password to use for the API, otherwise pulls from the empyre.db config
     port        -   port to start the API on, defaults to 1337 ;)
     """
 
@@ -172,21 +170,21 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
-    # instantiate an teampyre instance in case we need to interact with stagers or listeners
+    # instantiate an EmPyre instance in case we need to interact with stagers or listeners
     args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
 
     print ""
 
-    if startteampyre:
-        # if we want to start a full-running teampyre instance
-        print " * Starting a full teampyre instance"
-        main = teampyre.MainMenu(args=args)
+    if startEmpyre:
+        # if we want to start a full-running empyre instance
+        print " * Starting a full EmPyre instance"
+        main = empyre.MainMenu(args=args)
     else:
         # if we just want the RESTful API, i.e. no listener/etc. startup
-        main = teampyre.MainMenu(args=args, restAPI=True)
+        main = empyre.MainMenu(args=args, restAPI=True)
 
 
-    print " * Starting teampyre RESTful API on port: %s" %(port)
+    print " * Starting EmPyre RESTful API on port: %s" %(port)
 
     # refresh the token for the RESTful API
     apiToken = refresh_api_token(conn)
@@ -229,20 +227,20 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
     @app.route('/api/version', methods=['GET'])
     def get_version():
         """
-        Returns the current teampyre version.
+        Returns the current EmPyre version.
         """
-        return jsonify({'version': teampyre.VERSION})
+        return jsonify({'version': empyre.VERSION})
 
 
     @app.route('/api/config', methods=['GET'])
     def get_config():
         """
-        Returns JSON of the current teampyre config.
+        Returns JSON of the current EmPyre config.
         """
         configRaw = execute_db_query(conn, 'SELECT * FROM config')
 
         [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, rootuser, api_username, api_password, current_api_token, permanent_api_token] = configRaw[0]
-        config = [{"version":teampyre.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "rootuser":rootuser, "api_username":api_username, "api_password":api_password, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}]
+        config = [{"version":empyre.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "rootuser":rootuser, "api_username":api_username, "api_password":api_password, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}]
         return jsonify({'config': config})
 
 
@@ -1088,7 +1086,7 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
     @app.route('/api/admin/restart', methods=['GET', 'POST', 'PUT'])
     def signal_server_restart():
         """
-        Signal a restart for the Flask server and any teampyre instance.
+        Signal a restart for the Flask server and any EmPyre instance.
         """
         restart_server()
         return jsonify({'success': True})
@@ -1097,20 +1095,20 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
     @app.route('/api/admin/shutdown', methods=['GET', 'POST', 'PUT'])
     def signal_server_shutdown():
         """
-        Signal a restart for the Flask server and any teampyre instance.
+        Signal a restart for the Flask server and any EmPyre instance.
         """
         shutdown_server()
         return jsonify({'success': True})
 
 
-    if not os.path.exists('./data/teampyre.pem'):
-        print "[!] Error: cannot find certificate ./data/teampyre.pem"
+    if not os.path.exists('./data/empyre.pem'):
+        print "[!] Error: cannot find certificate ./data/empyre.pem"
         sys.exit()
 
 
     def shutdown_server():
         """
-        Shut down the Flask server and any teampyre instance gracefully.
+        Shut down the Flask server and any EmPyre instance gracefully.
         """
         global serverExitCommand
 
@@ -1119,12 +1117,12 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
             sys.stdout.close()
             sys.stdout = oldStdout
 
-        print "\n * Shutting down teampyre RESTful API"
+        print "\n * Shutting down EmPyre RESTful API"
 
         if conn: conn.close()
         
-        if startteampyre:
-            print " * Shutting down the teampyre instance"
+        if startEmpyre:
+            print " * Shutting down the EmPyre instance"
             main.shutdown()
 
         serverExitCommand = 'shutdown'
@@ -1136,7 +1134,7 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
 
     def restart_server():
         """
-        Restart the Flask server and any teampyre instance.
+        Restart the Flask server and any EmPyre instance.
         """
         global serverExitCommand
 
@@ -1164,7 +1162,7 @@ def start_restful_api(startteampyre=False, suppress=False, username=None, passwo
     signal.signal(signal.SIGINT, signal_handler)
 
     # wrap the Flask connection in SSL and start it
-    context = ('./data/teampyre.pem', './data/teampyre.pem')
+    context = ('./data/empyre.pem', './data/empyre.pem')
     app.run(host='0.0.0.0', port=port, ssl_context=context, threaded=True)
 
 
@@ -1195,21 +1193,20 @@ if __name__ == '__main__':
         # start just the RESTful API
         while serverExitCommand == 'restart':
             try:
-                start_restful_api(startteampyre=False, suppress=False, username=args.username, password=args.password, port=args.restport)
+                start_restful_api(startEmpyre=False, suppress=False, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
 
     elif args.headless:
-        # start an teampyre instance and RESTful API and suppress output
+        # start an EmPyre instance and RESTful API and suppress output
         while serverExitCommand == 'restart':
             try:
-                start_restful_api(startteampyre=True, suppress=True, username=args.username, password=args.password, port=args.restport)
+                start_restful_api(startEmpyre=True, suppress=True, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
     else:
         # normal execution
-        print args
-        main = teampyre.MainMenu(args=args)
+        main = empyre.MainMenu(args=args)
         main.cmdloop()
 
     sys.exit()

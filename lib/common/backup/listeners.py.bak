@@ -386,7 +386,7 @@ class Listeners:
         Resolve a name or port to listener ID.
         """
         cur = self.conn.cursor()
-        cur.execute('SELECT id FROM listeners WHERE name="%s"' % name)
+        cur.execute('SELECT id FROM listeners WHERE name=?', [name])
         results = cur.fetchone()
         cur.close()
         if results:
@@ -555,10 +555,10 @@ class Listeners:
                         return (False, "")
 
                 cur = self.conn.cursor(cursorclass=MySQLdb.cursors.DictCursor)
-                cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')" % (name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget, defaultLostLimit))
+                cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget, defaultLostLimit])
 
                 # get the ID for the listener
-                cur.execute("SELECT id FROM listeners where name='%s'" % name)
+                cur.execute("SELECT id FROM listeners where name=?", [name])
                 result = cur.fetchone()
                 cur.close()
 
@@ -578,10 +578,10 @@ class Listeners:
 
                         # add the listener to the database if start up
                         cur = self.conn.cursor()
-                        cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')" % (name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget, defaultLostLimit))
+                        cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget, defaultLostLimit])
 
                         # get the ID for the listener
-                        cur.execute("SELECT id FROM listeners where name='%s'" % name)
+                        cur.execute("SELECT id FROM listeners where name=?", [name])
                         result = cur.fetchone()
                         cur.close()
 
@@ -629,10 +629,10 @@ class Listeners:
             pivotHost += internalIP + ":" + str(listenPort)
 
             # insert the pivot listener with name=sessionID for the pivot agent
-            cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')" % (sessionID, pivotHost, listenPort, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, "pivot", name, defaultLostLimit))
+            cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [sessionID, pivotHost, listenPort, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, "pivot", name, defaultLostLimit])
 
             # get the ID for the listener
-            cur.execute("SELECT id FROM listeners where name='%s'" % sessionID)
+            cur.execute("SELECT id FROM listeners where name=?", [sessionID])
             result = cur.fetchone()
             cur.close()
 

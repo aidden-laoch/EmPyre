@@ -16,7 +16,7 @@ import base64
 class Stagers:
 
     def __init__(self, MainMenu, args):
-
+        print 'init'
         self.mainMenu = MainMenu
 
         # pull the database connection object out of the main menu
@@ -47,6 +47,7 @@ class Stagers:
         self.load_stagers()
 
     def load_stagers(self):
+        print 'load_stagers'
         """
         Load stagers from the install + "/lib/stagers/*" path
         """
@@ -65,6 +66,7 @@ class Stagers:
                 self.stagers[stagerName] = imp.load_source(stagerName, filePath).Stager(self.mainMenu, [])
 
     def set_stager_option(self, option, value):
+        print "set_stager_option"
         """
         Sets an option for all stagers.
         """
@@ -75,6 +77,7 @@ class Stagers:
                     stager.options[option]['Value'] = str(value)
 
     def generate_stager(self, server, key, profile, encrypt=True, encode=False):
+        print 'generate_stager'
         """
         Generate the Python stager that will perform
         key negotiation with the server and kick off the agent.
@@ -115,6 +118,7 @@ class Stagers:
             return stager
 
     def generate_stager_hop(self, server, key, profile, encrypt=True, encode=True):
+        print 'generate_stager_hop'
         """
         Generate the Python stager for hop.php redirectors that
         will perform key negotiation with the server and kick off the agent.
@@ -150,6 +154,7 @@ class Stagers:
             return stager
 
     def generate_agent(self, delay, jitter, profile, killDate, workingHours, lostLimit):
+        print 'generate_agent'
         """
         Generate "standard API" functionality, i.e. the actual agent.py that runs.
 
@@ -181,6 +186,7 @@ class Stagers:
         return code
 
     def generate_launcher_uri(self, server, encode=True, pivotServer="", hop=False):
+        print 'generate_launcher_uri'
         """
         Generate a base launcher URI.
 
@@ -203,6 +209,7 @@ class Stagers:
         return server + checksum
 
     def generate_launcher(self, listenerName, encode=True, userAgent="default", littlesnitch='True'):
+        print 'generate_launcher'
         """
         Generate the initial Python 'download cradle' with a specified
         c2 server and a valid HTTP checksum.
@@ -282,6 +289,7 @@ class Stagers:
             return launcherBase
 
     def generate_hop_php(self, server, resources):
+        print 'generate_hop_php'
         """
         Generates a hop.php file with the specified target server
         and resource URIs.
@@ -303,6 +311,7 @@ class Stagers:
         return hop
 
     def generate_macho(self, launcherCode):
+        print 'generate_macho'
 
         """
         Generates a macho binary with an embedded python interpreter that runs the launcher code
@@ -344,6 +353,7 @@ class Stagers:
             print helpers.color("[!] Unable to patch MachO binary")
 
     def generate_dylib(self, launcherCode, arch, hijacker):
+        print 'generate_dylib'
         """
         Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
         """

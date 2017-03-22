@@ -7,7 +7,7 @@ randomized stagers.
 
 """
 
-import re, string, base64, binascii, sys, os, socket, sqlite3, iptools
+import re, string, base64, binascii, sys, os, socket, MySQLdb, iptools
 from time import localtime, strftime
 from Crypto.Random import random
 
@@ -134,7 +134,8 @@ def get_config(fields):
         i.e. 'version,install_path'
     """
 
-    conn = sqlite3.connect('./data/empyre.db', check_same_thread=False)
+    #conn = sqlite3.connect('./data/empyre.db', check_same_thread=False)
+    conn = MySQLdb.connect(host='localhost',user='root',passwd='4zballs',db='empyre')
     conn.isolation_level = None
 
     cur = conn.cursor()

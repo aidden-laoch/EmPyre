@@ -13,7 +13,7 @@ VERSION = "1.2"
 
 from pydispatch import dispatcher
 
-import sys, cmd, MySQLdb, os, hashlib, traceback, time
+import sys, cmd, sqlite3, os, hashlib, traceback, time
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 import zipfile
@@ -59,10 +59,6 @@ class MainMenu(cmd.Cmd):
         self.stagers = stagers.Stagers(self, args=args)
         self.modules = modules.Modules(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)
-
-        # Bring in the TeamPire settings
-        #self.teamserver = 
-        #self.tport = 
 
         # make sure all the references are passed after instantiation
         self.agents.listeners = self.listeners
@@ -210,9 +206,9 @@ class MainMenu(cmd.Cmd):
     def database_connect(self):
         try:
             # set the database connectiont to autocommit w/ isolation level
-            self.conn = MySQLdb.connect(host='localhost',user='empyre-balls',passwd='4zballs',db='empyre')
-            #self.conn.text_factory = str
-            #self.conn.isolation_level = None
+            self.conn = sqlite3.connect('./data/empyre.db', check_same_thread=False)
+            self.conn.text_factory = str
+            self.conn.isolation_level = None
             return self.conn
 
         except Exception:

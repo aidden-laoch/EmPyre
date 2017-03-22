@@ -27,7 +27,7 @@ def database_connect():
     try:
         # set the database connectiont to autocommit w/ isolation level
         #conn = sqlite3.connect('./data/teampyre.db', check_same_thread=False)
-        conn = MySQLdb.connect(host='localhost',user='empyre-balls',passwd='4zballs',db='empyre')
+        conn = MySQLdb.connect(host='localhost',user='root',passwd='4zballs',db='empyre')
         #conn = db.cursor()
         #conn.text_factory = str
         #conn.isolation_level = None
@@ -1176,17 +1176,22 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--stager', nargs='?', const="list", help='Specify a stager to generate. Lists all stagers if none is specified.')
     parser.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
     parser.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
-    parser.add_argument('-v', '--version', action='store_true', help='Display current EmPyre version.')
-    parser.add_argument('--rest', action='store_true', help='Run the EmPyre RESTful API.')
-    parser.add_argument('--restport', nargs='?', help='Port to run the EmPyre RESTful API on.')
-    parser.add_argument('--headless', action='store_true', help='Run EmPyre and the RESTful API headless without the usual interface.')
+    parser.add_argument('-v', '--version', action='store_true', help='Display current teampyre version.')
+    parser.add_argument('--rest', action='store_true', help='Run the teampyre RESTful API.')
+    parser.add_argument('--restport', nargs='?', help='Port to run the teampyre RESTful API on.')
+    parser.add_argument('--headless', action='store_true', help='Run teampyre and the RESTful API headless without the usual interface.')
     parser.add_argument('--username', nargs='?', help='Start the RESTful API with the specified username instead of pulling from emypre.db')
     parser.add_argument('--password', nargs='?', help='Start the RESTful API with the specified password instead of pulling from emypre.db')
+    parser.add_argument('--teamserver', nargs='?', help='Connect to a TeamPire||TeamPyre Server by Domain or IP')
+    parser.add_argument('--tport', nargs='?', help='Port to connect to TeamPire||TeamPyre server, DEFAULT=1337')
 
     args = parser.parse_args()
 
     if not args.restport:
         args.restport = '1337'
+
+    if not args.tport:
+        args.tport = '1337'
 
     if args.version:
         print emypre.VERSION
@@ -1208,7 +1213,6 @@ if __name__ == '__main__':
                 pass
     else:
         # normal execution
-        print args
         main = teampyre.MainMenu(args=args)
         main.cmdloop()
 
