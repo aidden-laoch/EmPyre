@@ -1618,6 +1618,57 @@ class AgentMenu(cmd.Cmd):
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
 
+    def do_moduleimport(self, line):
+        "Task an agent to import a python module (*.py or folder) in memory."
+
+        parts = line.strip()
+        path = parts
+        fullzipname = ""
+        if path != "" and os.path.exists(path):
+            if os.path.splitext(path)[-1] == '.py' and os.path.isfile(path):
+                #zip up a single py file
+                zipname = os.path.basename(path).split('.')[0] + ".zip"
+                fullzipname = self.mainMenu.installPath+"data/misc/"+zipname
+                print helpers.color("[*] Creating zip file and uploading %s into memory" % fullzipname, color="green")
+                zf = zipfile.ZipFile(fullzipname, 'w', zipfile.ZIP_DEFLATED)
+                zf.write(path,zipname.split('.')[0], zipfile.ZIP_DEFLATED)
+                zf.close()
+                
+                
+            elif os.path.isdir(path):
+                #zip up the contents of a directory
+                zipname = os.path.basename(os.path.normpath(path))+".zip"
+                fullzipname = self.mainMenu.installPath+"data/misc/"+zipname
+                print helpers.color("[*] Writing module contents to %s" % fullzipname, color="green")
+                zf = zipfile.ZipFile(fullzipname, 'w', zipfile.ZIP_DEFLATED)
+                for root, dirs, files in os.walk(path):
+                    for file in files:
+                        zf.write(os.path.join(root,file))
+
+                zf.close()
+            else:
+                print helpers.color("[!] %s is not a valid path" % path)
+
+            if os.path.exists(fullzipname):
+                open_file = open(fullzipname,'rb')
+                module_data = open_file.read()
+                open_file.close()
+                os.remove(fullzipname)
+                msg = "Tasked agent to import "+path+" : " + hashlib.md5(module_data).hexdigest()
+                print helpers.color("[*] "+msg, color="green")
+                self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                c = compress.compress()
+                start_crc32 = c.crc32_data(module_data)
+                comp_data = c.comp_data(module_data, 9)
+                module_data = c.build_header(comp_data, start_crc32)
+                module_data = helpers.encode_base64(module_data)
+                data = zipname + "|" + module_data
+                self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_MODULE_IMPORT", data)
+            else:
+                print helpers.color("[!] Failed creating zipfile for module %s" % path)
+        else:
+            print helpers.color("[!] Please enter a valid path")
+
     def do_usemodule(self, line):
         "Use an EmPyre Python module."
 
@@ -1698,6 +1749,10 @@ class AgentMenu(cmd.Cmd):
 
     def complete_upload(self, text, line, begidx, endidx):
         "Tab-complete an upload file path"
+        return helpers.complete_path(text, line)
+
+    def complete_moduleimport(self, text, line, begidx, endidx):
+        "Tab-complete a module import file path"
         return helpers.complete_path(text, line)
 
     # def complete_updateprofile(self, text, line, begidx, endidx):

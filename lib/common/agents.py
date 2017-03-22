@@ -1011,6 +1011,9 @@ class Agents:
 
             #update the agent log
 
+            # dynamic script output -> non-blocking
+            self.update_agent_results(sessionID, data)
+            # update the agent log
             self.save_agent_log(sessionID, data)
 
         else:
